@@ -7,6 +7,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class Buffer {
     private ArrayDeque<Integer> store;
     private final int capacity;
+    public static final int POISON_PILL = -1;
 
     private final ReentrantLock lock = new ReentrantLock();
     private final Condition notFull = lock.newCondition();
@@ -46,11 +47,11 @@ public class Buffer {
         }
     }
 
-    private synchronized boolean full() {
+    private boolean full() {
         return store.size() == capacity;
     }
 
-    private synchronized boolean empty() {
+    private boolean empty() {
         return store.isEmpty();
     }
 
