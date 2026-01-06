@@ -1,33 +1,31 @@
 package com.norianna.concurrecy;
 
-import java.util.ArrayList;
+import java.util.ArrayDeque;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class Buffer {
-    private ArrayList<Integer> store;
-    private int i, j, size;
+    private ArrayDeque<Integer> store;
+    private final int capacity;
 
     private final ReentrantLock lock = new ReentrantLock();
-    private final Condition fullStore = lock.newCondition();
-    private final Condition emptyStore = lock.newCondition();
+    private final Condition notFull = lock.newCondition();
+    private final Condition notEmpty = lock.newCondition();
 
-    public Buffer(int size){
-        i=j=0;
-        this.size = size;
-        store = new ArrayList<Integer>();
+    public Buffer(int capacity){
+        this.capacity = capacity;
+        store = new ArrayDeque<Integer>();
     }
 
     public void insert(int value) throws InterruptedException {
         lock.lock();
         try {
             while(full()) {
-                fullStore.await();
-                System.out.println("FULL");
+                notFull.await();
             }
-            store.add(value);
+            store.addLast(value);
             System.out.println(store);
-            fullStore.signalAll();
+            notEmpty.signalAll();
         } finally {
             lock.unlock();
         }
@@ -37,20 +35,19 @@ public class Buffer {
         lock.lock();
         try {
             while(empty()) {
-                emptyStore.await();
-                System.out.println("VACÍO");
+                notEmpty.await();
             }
-            int popValue = store.removeFirst();
+            int value = store.removeFirst();
             System.out.println(store);
-            fullStore.signalAll();
-            return popValue;
+            notFull.signalAll();
+            return value;
         } finally {
             lock.unlock();
         }
     }
 
     private synchronized boolean full() {
-        return store.size() == size;
+        return store.size() == capacity;
     }
 
     private synchronized boolean empty() {
