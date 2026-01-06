@@ -4,22 +4,23 @@ import java.util.concurrent.StructuredTaskScope;
 
 public class Main {
     static void main() throws InterruptedException {
-        var buffer = new Buffer(5);
-
-        var producer = new Producer(buffer);
-        var consumer = new Consumer(buffer);
-
+        var totalProducers = 3;
+        var buffer = new Buffer(5, totalProducers);
         try (var scope = StructuredTaskScope.open()){
-            scope.fork(() -> {
-                producer.run();
-                return null;
-            });
+            for(int i: new int[totalProducers]) {
+                var producer = new Producer(buffer);
+                var consumer = new Consumer(buffer);
 
-            scope.fork(() -> {
-                consumer.run();
-                return null;
-            });
+                scope.fork(() -> {
+                    producer.run();
+                    return null;
+                });
 
+                scope.fork(() -> {
+                    consumer.run();
+                    return null;
+                });
+            }
             scope.join();
 
         } catch (StructuredTaskScope.FailedException e) {

@@ -8,22 +8,30 @@ public class Buffer {
     private ArrayDeque<Integer> store;
     private final int capacity;
     public static final int POISON_PILL = -1;
+    private int activeProducers;
 
     private final ReentrantLock lock = new ReentrantLock();
     private final Condition notFull = lock.newCondition();
     private final Condition notEmpty = lock.newCondition();
 
-    public Buffer(int capacity){
+    public Buffer(int capacity, int producers){
         this.capacity = capacity;
+        this.activeProducers = producers;
         store = new ArrayDeque<Integer>();
     }
 
     public void insert(int value) throws InterruptedException {
         lock.lock();
         try {
+            if (value == POISON_PILL && activeProducers > 1) {
+                disableProducer();
+                return;
+            }
+
             while(full()) {
                 notFull.await();
             }
+
             store.addLast(value);
             System.out.println(store);
             notEmpty.signalAll();
@@ -39,6 +47,7 @@ public class Buffer {
                 notEmpty.await();
             }
             int value = store.removeFirst();
+            if(value == POISON_PILL) store.add(POISON_PILL);
             System.out.println(store);
             notFull.signalAll();
             return value;
@@ -55,4 +64,7 @@ public class Buffer {
         return store.isEmpty();
     }
 
+    private void disableProducer() {
+        activeProducers--;
+    }
 }

@@ -10,7 +10,7 @@ public class Producer {
 
     public void run() throws InterruptedException {
         while(!Thread.interrupted()){
-            if(counter <= 20) {
+            if(counter <= 10) {
                 buffer.insert(counter++);
             } else {
                 buffer.insert(Buffer.POISON_PILL);
